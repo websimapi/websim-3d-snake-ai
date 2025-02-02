@@ -85,16 +85,6 @@ class Game {
     this.apple = pos;
   }
 
-  checkCollision(newHead) {
-    // Check wall collision
-    if (!inBounds(newHead, this.gridSize)) return true;
-    // Check self collision
-    for (let seg of this.snake) {
-      if (vectorEquals(seg, newHead)) return true;
-    }
-    return false;
-  }
-
   step() {
     if (this.done) {
       // Episode end. Reset and update episode counter.
@@ -132,13 +122,17 @@ class Game {
     const head = this.snake[this.snake.length - 1];
     const newHead = addVectors(head, this.direction);
 
-    // Check collisions
-    if (this.checkCollision(newHead)) {
-      // Negative reward for dying
-      this.reward = -10;
-      // Update Q for terminal state
-      const nextState = "terminal";
-      this.agent.updateQ(this.prevState, this.prevAction, this.reward, nextState);
+    // Check collisions with wall or self
+    if (!inBounds(newHead, this.gridSize)) {
+      // Wall collision: reward -2.
+      this.reward = -2;
+      this.agent.updateQ(this.prevState, this.prevAction, this.reward, "terminal");
+      this.done = true;
+      return;
+    } else if (this.snake.some(seg => vectorEquals(seg, newHead))) {
+      // Self collision: reward -1.
+      this.reward = -1;
+      this.agent.updateQ(this.prevState, this.prevAction, this.reward, "terminal");
       this.done = true;
       return;
     }
@@ -148,7 +142,7 @@ class Game {
     // Check if apple is eaten
     let ateApple = vectorEquals(newHead, this.apple);
     if (ateApple) {
-      this.reward = 10;
+      this.reward = 1;
       this.score++;
       document.getElementById("score").innerText = this.score;
       // Place new apple ensuring it does not spawn on top of the snake.
@@ -156,8 +150,7 @@ class Game {
     } else {
       // Remove tail segment to maintain length
       this.snake.shift();
-      // Small penalty each move to encourage efficiency
-      this.reward = -0.1;
+      this.reward = 0;
     }
 
     // Get next state after moving
@@ -175,7 +168,7 @@ class Game {
     const head = this.snake[this.snake.length - 1];
     let danger = Agent.directions.map(dir => {
       const nextPos = addVectors(head, dir);
-      return this.checkCollision(nextPos) ? 1 : 0;
+      return (!inBounds(nextPos, this.gridSize) || this.snake.some(seg => vectorEquals(seg, nextPos))) ? 1 : 0;
     });
     const foodDir = ['x','y','z'].map(axis => {
       if (this.apple[axis] > head[axis]) return "1";
