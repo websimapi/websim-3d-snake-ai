@@ -86,10 +86,12 @@ class Game {
   }
 
   step() {
+    // Check if previous move resulted in a terminal state.
     if (this.done) {
-      // Episode end. Reset and update episode counter.
       this.episode++;
       document.getElementById("episode").innerText = this.episode;
+      // Decay exploration rate only at end of an episode.
+      this.agent.epsilon = Math.max(this.agent.epsilon * this.agent.epsilonDecay, this.agent.epsilonMin);
       this.reset();
       return;
     }
@@ -201,16 +203,16 @@ class Game {
     const boxMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
     this.snake.forEach(seg => {
       const cube = new THREE.Mesh(boxGeometry, boxMaterial);
-      cube.position.set(seg.x - this.gridSize/2 + 0.5, seg.y - this.gridSize/2 + 0.5, seg.z - this.gridSize/2 + 0.5);
+      cube.position.set(seg.x - this.gridSize / 2 + 0.5, seg.y - this.gridSize / 2 + 0.5, seg.z - this.gridSize / 2 + 0.5);
       this.snakeGroup.add(cube);
     });
     this.scene.add(this.snakeGroup);
 
     // Update apple mesh position to the current apple coordinates.
     this.appleMesh.position.set(
-      this.apple.x - this.gridSize/2 + 0.5,
-      this.apple.y - this.gridSize/2 + 0.5,
-      this.apple.z - this.gridSize/2 + 0.5
+      this.apple.x - this.gridSize / 2 + 0.5,
+      this.apple.y - this.gridSize / 2 + 0.5,
+      this.apple.z - this.gridSize / 2 + 0.5
     );
   }
 }
@@ -294,10 +296,23 @@ class Agent {
     // Q-learning update rule
     const newQ = currentQ + this.lr * (reward + this.discount * qNext - currentQ);
     this.Q[state][action] = newQ;
+    // Note: Epsilon decay now happens at the end of an episode in Game.step.
+  }
 
-    // Decay epsilon after each update (could be per episode, but here per move)
-    if (this.epsilon > this.epsilonMin) {
-      this.epsilon *= this.epsilonDecay;
+  // Export Q-table as a JSON string
+  exportWeights() {
+    return JSON.stringify(this.Q);
+  }
+
+  // Import weights from a JSON string
+  importWeights(jsonStr) {
+    try {
+      const importedQ = JSON.parse(jsonStr);
+      this.Q = importedQ;
+      return true;
+    } catch (err) {
+      console.error("Error importing weights:", err);
+      return false;
     }
   }
 }
@@ -354,4 +369,34 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+///////////////////
+// Weight Export/Import Handlers
+///////////////////
+document.getElementById("downloadWeights").addEventListener("click", () => {
+  const data = agent.exportWeights();
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "weights.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+
+document.getElementById("importWeights").addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const success = agent.importWeights(e.target.result);
+    if (success) {
+      alert("Weights imported successfully!");
+    } else {
+      alert("Failed to import weights.");
+    }
+  };
+  reader.readAsText(file);
 });
