@@ -350,8 +350,8 @@ scene.add(gridHelper);
 const agent = new Agent();
 const game = new Game(scene, agent);
 
-// Game loop parameters
-const moveInterval = 200; // ms per game step
+// Game loop parameters with adjustable moveInterval
+let moveInterval = 200; // default ms per game step
 let lastTime = 0;
 
 function animate(time) {
@@ -399,4 +399,12 @@ document.getElementById("importWeights").addEventListener("change", (event) => {
     }
   };
   reader.readAsText(file);
+});
+
+// Speed Toggle Handler
+const speedToggle = document.getElementById("speedToggle");
+const speedValue = document.getElementById("speedValue");
+speedToggle.addEventListener("input", (e) => {
+  moveInterval = parseInt(e.target.value);
+  speedValue.innerText = e.target.value;
 });
