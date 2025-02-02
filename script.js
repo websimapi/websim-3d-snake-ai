@@ -34,10 +34,10 @@ class Game {
     this.scene = scene;
     this.agent = agent;
     this.gridSize = 10; // A 10x10x10 grid
-    this.reset();
-    this.initRendering();
     this.score = 0;
     this.episode = 0;
+    this.initRendering();
+    this.reset();
   }
 
   reset() {
@@ -45,9 +45,11 @@ class Game {
     if (this.snakeGroup) {
       this.scene.remove(this.snakeGroup);
     }
-    if (this.appleMesh) {
-      this.scene.remove(this.appleMesh);
-    }
+    // NOTE: Removed removal of appleMesh to ensure a single food remains in the map.
+    // if (this.appleMesh) {
+    //   this.scene.remove(this.appleMesh);
+    // }
+    
     // Initialize snake in center with length 3 moving in +x direction.
     const center = Math.floor(this.gridSize / 2);
     this.snake = [
@@ -72,6 +74,7 @@ class Game {
   // Place apple in a random location not occupied by the snake.
   placeApple() {
     let pos;
+    // To ensure apple always spawns on a free cell, we loop until we find one.
     do {
       pos = {
         x: Math.floor(Math.random() * this.gridSize),
@@ -148,6 +151,7 @@ class Game {
       this.reward = 10;
       this.score++;
       document.getElementById("score").innerText = this.score;
+      // Place new apple ensuring it does not spawn on top of the snake.
       this.placeApple();
     } else {
       // Remove tail segment to maintain length
@@ -209,7 +213,7 @@ class Game {
     });
     this.scene.add(this.snakeGroup);
 
-    // Update apple mesh position
+    // Update apple mesh position to the current apple coordinates.
     this.appleMesh.position.set(
       this.apple.x - this.gridSize/2 + 0.5,
       this.apple.y - this.gridSize/2 + 0.5,
