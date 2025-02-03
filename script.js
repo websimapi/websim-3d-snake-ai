@@ -299,16 +299,42 @@ class Agent {
     // Note: Epsilon decay now happens at the end of an episode in Game.step.
   }
 
-  // Export Q-table as a JSON string
+  // Export full model (Q-table and learning parameters) as a JSON string
   exportWeights() {
-    return JSON.stringify(this.Q);
+    const model = {
+      Q: this.Q,
+      epsilon: this.epsilon,
+      lr: this.lr,
+      discount: this.discount,
+      epsilonMin: this.epsilonMin,
+      epsilonDecay: this.epsilonDecay
+    };
+    return JSON.stringify(model);
   }
 
-  // Import weights from a JSON string
+  // Import weights and learning parameters from a JSON string
   importWeights(jsonStr) {
     try {
-      const importedQ = JSON.parse(jsonStr);
-      this.Q = importedQ;
+      const importedModel = JSON.parse(jsonStr);
+      if (importedModel.Q !== undefined) {
+        this.Q = importedModel.Q;
+      }
+      if (importedModel.epsilon !== undefined) {
+        this.epsilon = importedModel.epsilon;
+      }
+      if (importedModel.lr !== undefined) {
+        this.lr = importedModel.lr;
+      }
+      if (importedModel.discount !== undefined) {
+        this.discount = importedModel.discount;
+      }
+      if (importedModel.epsilonMin !== undefined) {
+        this.epsilonMin = importedModel.epsilonMin;
+      }
+      if (importedModel.epsilonDecay !== undefined) {
+        this.epsilonDecay = importedModel.epsilonDecay;
+      }
+      console.log("Imported model:", importedModel);
       return true;
     } catch (err) {
       console.error("Error importing weights:", err);
